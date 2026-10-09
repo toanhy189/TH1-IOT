@@ -10,7 +10,27 @@ Yêu cầu Python 3.9+ và một MQTT broker. Cài thư viện:
 python -m pip install -r requirements.txt
 ```
 
-**Broker mặc định:** Mosquitto chạy trên máy cá nhân tại `localhost:1883`. Cài và khởi động Mosquitto theo hệ điều hành của bạn. Với broker khác, đặt các biến môi trường trước khi chạy **mọi** chương trình, sao cho publisher và subscriber dùng cùng một broker:
+**Broker mặc định:** Mosquitto chạy trên máy cá nhân tại `localhost:1883`. Bạn cần cài và khởi động broker trước khi chạy các chương trình Python.
+
+### Chạy broker trên Windows
+
+Nếu lệnh `Test-NetConnection localhost -Port 1883` báo `TcpTestSucceeded : False`, máy chưa có broker đang nghe ở cổng này. Tải bản Windows x64 tại [trang tải Mosquitto chính thức](https://mosquitto.org/download/) và cài đặt. Sau khi cài, mở một cửa sổ PowerShell riêng để chạy broker:
+
+```powershell
+& "C:\Program Files\mosquitto\mosquitto.exe" -v
+```
+
+Giữ cửa sổ này mở trong lúc làm bài. Nếu bạn chọn thư mục cài khác, thay đường dẫn cho đúng. Nếu installer đã bật dịch vụ Mosquitto và cổng 1883 đã hoạt động, không cần chạy thêm lệnh trên. Kiểm tra lại trong PowerShell khác:
+
+```powershell
+Test-NetConnection localhost -Port 1883
+```
+
+Khi thấy `TcpTestSucceeded : True`, các chương trình trong repo có thể dùng cấu hình mặc định. Chạy Mosquitto không kèm file cấu hình chỉ cho kết nối trên chính máy đó và cho phép kết nối không cần tài khoản. **Không nhập** các giá trị mẫu `ten_dang_nhap` và `mat_khau` ở ví dụ bên dưới nếu bạn dùng cách này.
+
+### Dùng broker khác
+
+Nếu broker ở máy khác hoặc có cổng khác, đặt các biến môi trường trước khi chạy **mọi** chương trình, sao cho publisher và subscriber dùng cùng một broker:
 
 ```powershell
 $env:MQTT_HOST = "localhost"  # Đổi thành địa chỉ broker của bạn nếu cần
