@@ -10,38 +10,41 @@ Yêu cầu Python 3.9+ và một MQTT broker. Cài thư viện:
 python -m pip install -r requirements.txt
 ```
 
-**Broker mặc định:** Mosquitto chạy trên máy cá nhân tại `localhost:1883`. Bạn cần cài và khởi động broker trước khi chạy các chương trình Python.
+**Broker mặc định:** `localhost:1883` (Mosquitto chạy trên chính máy bạn). Nếu dùng cách này, không cần đặt `MQTT_HOST`, `MQTT_PORT`, tài khoản hay TLS trong PowerShell. Cần cài và chạy broker trước khi chạy các chương trình Python.
 
 ### Chạy broker trên Windows
 
-Nếu lệnh `Test-NetConnection localhost -Port 1883` báo `TcpTestSucceeded : False`, máy chưa có broker đang nghe ở cổng này. Tải bản Windows x64 tại [trang tải Mosquitto chính thức](https://mosquitto.org/download/) và cài đặt. Sau khi cài, mở một cửa sổ PowerShell riêng để chạy broker:
-
-```powershell
-& "C:\Program Files\mosquitto\mosquitto.exe" -v
-```
-
-Giữ cửa sổ này mở trong lúc làm bài. Nếu bạn chọn thư mục cài khác, thay đường dẫn cho đúng. Nếu installer đã bật dịch vụ Mosquitto và cổng 1883 đã hoạt động, không cần chạy thêm lệnh trên. Kiểm tra lại trong PowerShell khác:
+Kiểm tra broker trong PowerShell:
 
 ```powershell
 Test-NetConnection localhost -Port 1883
 ```
 
-Khi thấy `TcpTestSucceeded : True`, các chương trình trong repo có thể dùng cấu hình mặc định. Chạy Mosquitto không kèm file cấu hình chỉ cho kết nối trên chính máy đó và cho phép kết nối không cần tài khoản. **Không nhập** các giá trị mẫu `ten_dang_nhap` và `mat_khau` ở ví dụ bên dưới nếu bạn dùng cách này.
+Nếu `TcpTestSucceeded : False`, máy chưa có broker đang nghe ở cổng này. Tải bản Windows x64 tại [trang tải Mosquitto chính thức](https://mosquitto.org/download/) và cài đặt. Nếu cài xong mà cổng vẫn chưa mở, chạy broker trong một cửa sổ PowerShell riêng:
+
+```powershell
+& "C:\Program Files\mosquitto\mosquitto.exe" -v
+```
+
+Giữ cửa sổ đó mở trong lúc làm bài. Nếu bạn chọn thư mục cài khác, thay đường dẫn cho đúng. Nếu installer đã bật dịch vụ Mosquitto và `TcpTestSucceeded : True`, **không chạy thêm `mosquitto.exe -v`**: hai broker không thể cùng dùng cổng 1883. Chạy Mosquitto không kèm file cấu hình chỉ cho kết nối trên chính máy đó và cho phép kết nối không cần tài khoản.
+
+Nếu trước đó bạn đã thử IP ví dụ hoặc nhập tài khoản mẫu, đặt lại cấu hình **trong từng terminal sẽ chạy Python**:
+
+```powershell
+$env:MQTT_HOST = "localhost"
+$env:MQTT_PORT = "1883"
+Remove-Item Env:MQTT_USERNAME -ErrorAction SilentlyContinue
+Remove-Item Env:MQTT_PASSWORD -ErrorAction SilentlyContinue
+Remove-Item Env:MQTT_TLS -ErrorAction SilentlyContinue
+```
+
+Nếu lỗi kết nối ghi một IP khác `localhost` (ví dụ `192.168.1.10`), `MQTT_HOST` trong terminal đó vẫn trỏ tới IP cũ. Chạy lại khối lệnh trên rồi chạy file Python trong **cùng terminal**.
 
 ### Dùng broker khác
 
-Nếu broker ở máy khác hoặc có cổng khác, đặt các biến môi trường trước khi chạy **mọi** chương trình, sao cho publisher và subscriber dùng cùng một broker:
+Nếu broker ở máy khác, lấy địa chỉ, cổng và tài khoản (nếu có) từ người quản lý broker. Đặt `MQTT_HOST` thành địa chỉ **thật** và `MQTT_PORT` thành cổng **thật** trong PowerShell trước khi chạy chương trình. Chỉ đặt `MQTT_USERNAME` và `MQTT_PASSWORD` nếu broker yêu cầu đăng nhập; chỉ đặt `MQTT_TLS=1` nếu broker yêu cầu TLS. Khi bật TLS mà không đặt `MQTT_PORT`, chương trình dùng cổng `8883`.
 
-```powershell
-$env:MQTT_HOST = "localhost"  # Đổi thành địa chỉ broker của bạn nếu cần
-$env:MQTT_PORT = "1883"
-# Nếu broker yêu cầu tài khoản:
-$env:MQTT_USERNAME = "ten_dang_nhap"
-$env:MQTT_PASSWORD = "mat_khau"
-# Nếu broker dùng TLS: đặt MQTT_TLS = "1" và cổng phù hợp (thường là 8883).
-```
-
-Không cần khai báo tài khoản và TLS cho broker Mosquitto nội bộ không bật xác thực. Nếu đặt `MQTT_TLS=1` mà không đặt `MQTT_PORT`, cổng mặc định là `8883`. Các biến môi trường được đọc riêng cho từng tiến trình; mở nhiều cửa sổ terminal thì cấu hình ở từng cửa sổ.
+Publisher và subscriber phải dùng cùng một broker. Biến `$env:...` chỉ áp dụng cho terminal hiện tại; nếu mở hai terminal, hãy cấu hình ở cả hai.
 
 ## Bài 1: Publisher và subscriber
 
@@ -61,10 +64,15 @@ Có thể thêm `--count 3 --interval 1` để gửi ba lần. Có thể dùng b
 
 ## Bài 2: Cảm biến nhiệt độ, độ ẩm
 
-Mở hai terminal, chạy monitor trước rồi chạy sensor:
+Mở hai terminal. Ở terminal thứ nhất, chạy monitor:
 
 ```powershell
 python monitor_subscriber_bai2.py
+```
+
+Ở terminal thứ hai, chạy sensor:
+
+```powershell
 python sensor_publisher_bai2.py
 ```
 
@@ -72,10 +80,15 @@ Sensor gửi JSON lên `iot/lab/sensor01/data` mỗi 3 giây. Dùng `--count 5` 
 
 ## Bài 3: Điều khiển đèn thông minh
 
-Mở hai terminal, chạy thiết bị trước rồi chạy bộ điều khiển:
+Mở hai terminal. Ở terminal thứ nhất, chạy thiết bị:
 
 ```powershell
 python device_bai3.py
+```
+
+Ở terminal thứ hai, chạy bộ điều khiển:
+
+```powershell
 python controller_bai3.py
 ```
 
